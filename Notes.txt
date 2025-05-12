@@ -1,0 +1,355 @@
+Vanilla Redux without RTK:
+
+1- the app starts with creating the store and in the reducer.js
+2- step two is creating action
+3- so far we have use combineReducer and createStore API from vanilla redux. 
+4- but in order to connect our store with react, we will use the Provder from react-redux library 
+5- react-redux is the official React binding library for Redux.
+    Redux itself is just a state management library — it doesn’t know anything about React. react-redux bridges that gap by:
+
+        a. Allowing React components to access the Redux store.
+
+        b. Providing hooks like useSelector() and useDispatch().
+
+        c. Giving you the <Provider> component to make the Redux store accessible to all child components.
+
+What is <Provider>?
+
+6- <Provider> is a React component from react-redux.
+
+        a. You wrap your React app in <Provider store={store}> so that:
+
+        b. All components under it can access the Redux store via context.
+
+        c. You don’t have to manually pass the store down through props.
+
+7- ad provider to the main.jsx
+8- 
+
+export const countReducer = (state = initialState, action) => {
+  switch (action.type) {
+    case "ADD_TEN":
+      return {
+        ...state,
+        count: state.count + 10,
+      };
+    default:
+      return state;
+  }
+};
+
+
+INITIALLY WHEN WE RETURN OUR STATE, it takes the default state (state = initialState, action), that is why the count is 0. initial state doesnt change even if we dispatch actions. 
+
+9- Now we are moving away from simple counter to an ecommerce store
+
+10- useSelector we dont have to use the store.subscribe(). it subscribes to the store for us and anytime we dispatch an action, it will call its selector function right away. 
+so
+const countData = useSelector((state) => state.countReducer.count);
+this (state) => state.countReducer.count is the selector for ADD and SUBTRACT actions
+
+11- 
+
+// we can have plenty of reducers in the root reducer
+
+// the countReducer looks like this:
+// countReducer {
+// count: 0
+// }
+// so we access this from the useSelector, we dont access the initial state in the reducer directly.
+// use selector will first go to state the countreducer then count: state.countReducer.count
+
+// for the ecommerce store we wont use combineReducer. When we dont use the combineReducer API,
+// we can directly access the state prperties. so it would be state.count. 
+// that is why we are directly accessing state.products in this ecommerce useSelector "selector" function.
+...
+...
+...
+STARTING WITH RTK
+I am thinking of making a storetwo in the same file and lets see if I would be able to successfully wrap my app to it or not. 
+
+1- we started rtk with the storetwo folder. then I made the cartSlice folder and in that we made the cartSlice.js file. 
+2- in that file we will import **creteSlice api** from RTK
+3- good thing about rtk is we dont need actions anymore.. 
+4- with createSLice we are making some kind of a store reducer..... hmmm... 
+5- ChatGPT: The singular reducer is the combination of all the individual functions you define inside the reducers object.
+6- for store we will use  configureStore from RTK. 
+
+so far we have used the following from the RTK: 
+
+createSlice()
+configureStore()
+
+so far we are using using these from react-redux
+
+useSelector()
+useDispatch()
+
+
+7- 
+createSlice takes an object with three main options fields:
+
+name: a string that will be used as the prefix for generated action types
+initialState: the initial state of the reducer
+reducers: an object where the keys are strings, and the values are "case reducer" functions that will handle specific actions
+
+8- 
+export const storeTwo = configureStore({
+  reducer: {
+    cart: cartReducer,
+  },
+});
+
+here the reducer obj is telling redux to slice up its global state like this: 
+{
+  cart: {
+    products: [...],
+    cart: [...],
+    total: 0
+  }
+}
+this is the state. that is why we can access it with state.cart easily
+
+9- before rtk, we had actions in a seperate file, then a switch statement handling those actions. lasstly we were calling useisptach in our component and importing the action function and then dispatching actions to the reducers. So it was a lot of boiler plate code. 
+
+now we have the actions inside the reducers. all we need to do is to export the actions from the reducser. and import those actions in our component and useDispatch and those actions. RTK will make the action types itself. we just need ot handle the logic of what to do with the payload when it is dispatched. 
+
+--------------------------------- USING RTK QUERY ------------------------------
+
+we brought two things for this: 
+
+createAPI()
+fetchBaseQuery()
+
+we brought htem in a file in the store called productsApi.js
+
+the basic setup: 
+
+export const productsApi = createApi({
+  reducerPath: "productsApi",
+  baseQuery: fetchBaseQuery({ baseUrl: "http://dummyjson.com" }),
+  endpoints: (builder) => ({}),
+});
+
+enpoints will be whatever comes after base query. 
+
+1- 
+
+RTK Query tags and React Query's dependency array (often in query keys) **sound similar because they serve similar purposes**: they both help control **when and how data is fetched, cached, or invalidated**, but they're used in different contexts and work differently.
+
+**RTK Query: `providesTags` and `invalidatesTags`**
+
+These are part of **Redux Toolkit Query (RTK Query)** and are used for **cache invalidation**.
+
+- **`providesTags`**: You attach this to an endpoint to label the data it fetches.
+- **`invalidatesTags`**: You attach this to a mutation to tell RTK Query to refetch any endpoints that "provided" those tags.
+
+getPosts: builder.query({
+query: () => '/posts',
+providesTags: ['Posts'],
+}),
+
+addPost: builder.mutation({
+query: (newPost) => ({ url: '/posts', method: 'POST', body: newPost }),
+invalidatesTags: ['Posts'], // causes getPosts to refetch
+}),
+
+### **React Query: Dependency Arrays in Query Keys**
+
+In **React Query**, you use a **query key array** to uniquely identify and re-fetch data when dependencies change.
+
+useQuery(['posts', userId], () => fetchPostsByUser(userId));
+
+2- 
+about the reduceer path: 
+
+export const apiSlice = createApi({
+  reducerPath: 'api', // default value
+  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
+  endpoints: (builder) => ({
+    getUsers: builder.query({ query: () => '/users' }),
+  }),
+});
+
+
+the redux state will look like: 
+state = {
+  api: {
+    // all RTK Query state: cache, status, etc.
+  },
+  // other reducers...
+}
+
+about the reducer path, we may add it to the configureStore like this: 
+
+[newsApi.reducerPath]: newsApi.reducer
+
+[newsApi.reducerPath]: this is just gonna resole to the "newApi" string and the newsApi.reducer is the actual reducer that fetches, cach data has loading etc. 
+
+3- gist
+
+a- endpoints
+
+You define what to fetch or mutate using builder.query() or builder.mutation().
+
+You specify HTTP methods (GET, POST, etc.), what URL to hit, and how to transform the response.
+
+You also configure cache behavior (e.g. providesTags, invalidatesTags) here.
+
+and also we get the hooks here
+
+b- baseQuery
+
+Think of this as how to actually fetch the data — it usually wraps fetch(), and RTK Query handles things like:
+
+Request execution
+
+Error handling
+
+Injecting headers/token
+
+You can use the built-in fetchBaseQuery() or write a custom one (e.g. using Axios).
+
+c- reducerPath
+
+It’s just the key in your Redux store where RTK Query will store:
+
+Caches
+
+Loading/error states
+
+Fetched data
+
+EXPLAINING THE ENPOINTS SYNTAX:
+
+endpoints: (builder) => ({
+  // This is the name of your GET request
+  getAllProducts: builder.query({
+
+    // This function returns the endpoint to hit, added to the baseUrl
+    // It means: go fetch from http://dummyjson.com/products
+    query: () => "products",
+  }),
+}),
+
+so think like, we have a callback in endpoints that takes the builder, we havent used the builder, we will use it in the callback. we will create the name of the hook and use the builder's method there. what is this method doing? it is simply making a url. and of course other hings like method etc. 
+it is doing a lot of things, like caching, cache validation with tags, handling states like: 
+const { data, error, isLoading } = useGetAllProductsQuery();
+
+4- Important points: when you have a store vs no store but apiSlice
+
+ If you're using a Redux store (which is the common case in RTK Query):
+You do NOT need ApiProvider. You ONLY use <Provider store={store}> from react-redux.
+
+And yes — when you write this in your store setup:
+
+[newsApi.reducerPath]: newsApi.reducer
+
+You're mounting the RTK Query API slice into your Redux store. So that's enough to give your app access to all the generated hooks.
+
+(rare case below)
+If you're NOT using Redux at all (rare but supported case): Then and only then, you can use the special ApiProvider directly: 
+<ApiProvider api={newsApi}>
+  <App />
+</ApiProvider>
+
+Serializable data
+
+redux stores serialiazable data. SO any data that can be converted easily to JSON with JSON.stringify and back into JS object with JSON.parse(), this type of data. those are arrays, objects, primitive tyes like numbers, strings, booleans etc. But non serializable data like Math.random() becauseit mutable, or new Date() or class instances etc, redux doesnt store it and complains about it. 
+
+Whichi s why in the dfault middleware we call in the configureStore we tell redux to ignore some of this data. like the reducerPath. The reducerPath is a key where our cached data is stored in the stored. but it also stores other objects like AbortController, or cancelling fetches. so we tell redux to ignore the reducer path. 
+
+serializableCheck: {
+  ignoredPaths: [apiSlice.reducerPath], // ← "api"
+}
+
+secondly redux actions look like this:
+
+{
+  type: "api/executeQuery/fulfilled",
+  payload: {...},       // ← The data or result
+  meta: {...}           // ← Extra info like timestamps, args, etc.
+}
+
+it has fields and payload and meta are also fields. RTK Query automatically dispatches these actions for you (when fetching data), and sometimes they include functions or non-serializable data inside payload or meta.
+payload: () => console.log("not serializable") if payload has a function, redux will compain about it. rtk query also adds timestamps there. so this type of data is non-serializable and that it why we tell it to ignore it. 
+
+what does rtk query return? 
+
+createApi() returns an object with properties like: {
+
+reducerPath
+
+reducer
+
+endpoints
+
+middleware ✅
+
+useQuery hooks
+}
+
+so this is the middleware we add to the defaultmiddleware in the configureStore. 
+
+TANSTACK (REACT) QUERY {SIGNAL} VS RTK QUERY {SIGNAL}: 
+
+signal comes from the AbortController API in the browser. It's used to cancel (abort) a fetch request if it's no longer needed — like when:
+
+1- a component unmounts
+2- a query is refetched
+3- the user navigates away quickly
+
+React Query passes signal to your fetch function in queryFn. It's manual: You must wire it up yourself in your fetch.
+
+Example:
+useQuery(['products'], async ({ signal }) => {
+  const response = await fetch('/products', { signal });
+  return response.json();
+});
+
+✅ You must use signal in your custom fetch logic
+🚫 If you ignore it, React Query can't cancel the request
+
+https://tanstack.com/query/v3/docs/framework/react/guides/query-cancellation
+
+RTK: 
+
+fetchBaseQuery already hooks into signal internally. RTK Query cancels unused requests automatically. You rarely deal with signal unless you write a custom fetch.
+--------------------- AXIOS: --------------------
+
+1- the axios results are located in "data" obj and error in error.response obj. axios returns a promise so we put it in an async function. 
+2- as far as headers are concerned, for get req, it is the 2nd argument and for the rest of them, it is the third argument. 
+axios.get(url, {})
+axios.post(url, {data}, {})
+
+3- for these examples in the axios folder, they are default exports, so thye are being imported as Setup and we only change the address of imports to render them all. 
+
+4- CONFIGURING GLOBAL SETTINGS FOR AXIOS RequestS
+axios.defaults.headers.common["Accept"] = "application/json";
+
+this sets the global settings for axios. the .dfault  is a built in property. that is what we are setting. for default we are setting the headers. and we common means, apply these for all headers like get, post, del etc
+
+5- headers give extra info like: 
+
+What type of response you want (Accept)
+
+What type of data you're sending (Content-Type)
+
+Authorization tokens, etc.
+
+6- Global.js axios global settings
+the axios above will already have the accept headers because we set them in global.js and imported in
+app. just by importing it is already changing the axios global settings.
+if I comment out the import it then shows this in the Networks tab of browser:
+ Accept | application/json, text/plain, */*
+
+7- we cant always use global hearders. so for web tokens, we cannot rely on global hearders. 
+
+8- the customInstance file is similar to global instance file. for the global instance, for our requets we had a global axios settings. so for all requests we had similar headers. 
+
+custom we actually set our custom headers. so we are still using the same urls, two, but one we will try to use the custom axios instance. becausefor randomUser api, we didnt need the Accept headers. It works. for course-api, we had different headers and none for rendomuserAPi and it can be seen in the Network tab. so may be we have some urls thaat dont require login info. and for some we do. for the ones we require the login info and role ofa  user, we can use the axios.create custom instance. and the variable we save it in, we need to call that variable then. not axios. and pass our url to it. 
+
+9- INTERCEPTORS
+they are functions that axios calls for every request. we can use the interceptor to transform the req before it leaves the app. and add some custom logic.
+
+
