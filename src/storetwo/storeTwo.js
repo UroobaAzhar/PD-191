@@ -1,15 +1,19 @@
 import { configureStore } from "@reduxjs/toolkit";
 import cartReducer from "./cartSlice/cartSlice.js";
 import { productsApi } from "./productsApi.js";
+import { usersApi } from "./usersApi.js";
 
 export const storeTwo = configureStore({
   reducer: {
     cart: cartReducer,
 
     [productsApi.reducerPath]: productsApi.reducer,
+    [usersApi.reducerPath]: usersApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(productsApi.middleware),
+    getDefaultMiddleware()
+      .concat(productsApi.middleware)
+      .concat(usersApi.middleware),
 });
 
 // Bytecorp example:

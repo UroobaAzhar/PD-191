@@ -91,6 +91,7 @@ import {
 import { useState } from "react";
 // importing for axios
 import Setup from "./axios/examples/Interceptors";
+import Users from "./Users";
 // import axios global settings
 // only use this import for GLobalInstance file
 // import "./global";
@@ -100,7 +101,6 @@ const App = () => {
   const [input, setInput] = useState();
   const { products, cart, total } = useSelector((state) => state.cart);
   const { data, error, isLoading } = useGetAllProductsQuery();
-
   // empty string will show all products
   // const { data: singleProduct } = useGetSingleProductQuery(input || "");
   const { data: singleProduct } = useGetSingleProductQuery(input);
@@ -163,6 +163,9 @@ const App = () => {
       <hr />
       <h1>AXIOS BELOW</h1>
       <Setup />
+      <hr />
+      <h1>USERS QUERY DATA BELOW</h1>
+      <Users />
     </>
   );
 };
